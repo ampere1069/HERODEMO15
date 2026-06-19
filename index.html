@@ -1,0 +1,393 @@
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MRT DASHBOARD | HERO NV04</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300;1,600&family=Space+Grotesk:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --void: #020408;
+  --cosmos: #070C18;
+  --lunar: #C8D4E8;
+  --moonlight: #5E9ED4;
+  --fade: rgba(200,215,240,.46);
+  --fn-s: 'Cormorant Garamond', Georgia, serif;
+  --fn-u: 'Space Grotesk', system-ui, sans-serif;
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; background:var(--void); overflow:hidden; cursor:none; }
+.stage { position:relative; width:100%; height:100dvh; overflow:hidden; }
+.camera { position:absolute; inset:-5%; width:110%; height:110%; will-change:transform; }
+video.media { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center; }
+.overlay {
+  position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(
+    140deg,
+    rgba(2,4,8,.66) 0%,
+    rgba(7,12,24,.20) 42%,
+    rgba(7,12,24,.15) 66%,
+    rgba(2,4,8,.54) 100%
+  );
+}
+.stars { position:absolute; inset:0; pointer-events:none; z-index:2; }
+.stars::before {
+  content:'';
+  position:absolute; top:0; left:0;
+  width:1px; height:1px; border-radius:50%;
+  background:transparent;
+  box-shadow: 1150px 177px 0 1px rgba(235,245,255,0.61), 986px 362px 0 1px rgba(235,245,255,0.54), 768px 777px 0 1px rgba(235,245,255,0.56);
+}
+.stars::after {
+  content:'';
+  position:absolute; top:0; left:0;
+  width:2px; height:2px; border-radius:50%;
+  background:transparent;
+  box-shadow: 724px 863px 0 1px rgba(235,245,255,0.60), 189px 597px 0 1px rgba(235,245,255,0.62);
+}
+.globe-wrap {
+  position:absolute;
+  left:48%; top:41%;
+  transform:translate(-50%,-50%);
+  z-index:4; pointer-events:none;
+  opacity:0;
+}
+#globe-canvas {
+  display:block;
+  filter:
+    drop-shadow(0 0 24px rgba(230,245,255,1))
+    drop-shadow(0 0 60px rgba(180,220,255,.85))
+    drop-shadow(0 0 120px rgba(120,190,255,.50));
+  border-radius:50%;
+}
+.grain {
+  position:fixed; inset:-3%; width:106%; height:106%;
+  pointer-events:none; z-index:99; opacity:.022;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:grain .45s steps(2) infinite;
+}
+@keyframes grain {
+  0%,100% { transform:translate3d(0,0,0); }
+  33%      { transform:translate3d(-2%,1%,0); }
+  66%      { transform:translate3d(1%,-1.5%,0); }
+}
+nav.topbar {
+  position:absolute; top:0; left:0; right:0;
+  z-index:10; padding:2.2rem 3.8rem;
+  display:flex; justify-content:space-between; align-items:center;
+}
+.brand {
+  font-family:var(--fn-u); font-size:.68rem; font-weight:300;
+  letter-spacing:.2em; text-transform:uppercase; color:var(--fade);
+}
+.nav-r { display:flex; align-items:center; gap:2.2rem; }
+.edition {
+  font-family:var(--fn-u); font-size:.65rem; font-weight:300;
+  letter-spacing:.16em; text-transform:uppercase;
+  color:rgba(195,210,238,.36);
+}
+button.vid-btn {
+  font-family:var(--fn-u); font-size:.65rem; font-weight:400;
+  letter-spacing:.12em; text-transform:uppercase;
+  color:rgba(200,215,240,.65);
+  background:rgba(200,215,240,.05);
+  border:1px solid rgba(200,215,240,.18);
+  padding:.42em 1.15em; border-radius:2px; cursor:none;
+  transition:background .22s, border-color .22s;
+}
+button.vid-btn:hover  { background:rgba(200,215,240,.1); border-color:rgba(200,215,240,.38); }
+button.vid-btn:focus-visible { outline:2px solid var(--moonlight); outline-offset:3px; }
+.content {
+  position:absolute; left:5.5vw; bottom:9vh;
+  z-index:10; max-width:55vw;
+}
+.phase-tag {
+  display:flex; align-items:center; gap:.9rem;
+  font-family:var(--fn-u); font-size:.62rem; font-weight:300;
+  letter-spacing:.24em; text-transform:uppercase;
+  color:var(--moonlight); margin-bottom:1.6rem;
+}
+.phase-tag::before {
+  content:''; display:block; width:30px; height:1px;
+  background:linear-gradient(90deg, var(--moonlight), transparent);
+}
+.tline-wrap { overflow:hidden; line-height:.9; }
+.tl-1 {
+  display:block;
+  font-family:var(--fn-s); font-weight:600;
+  font-size:clamp(5rem,13vw,17rem);
+  color:var(--lunar); letter-spacing:-.025em;
+}
+.tl-2 {
+  display:block;
+  font-family:var(--fn-s); font-weight:300; font-style:italic;
+  font-size:clamp(3.2rem,8.5vw,11rem);
+  color:rgba(195,210,240,.52); letter-spacing:.01em;
+  padding-left:.18em;
+}
+.tl-3 {
+  display:block;
+  font-family:var(--fn-s); font-weight:600;
+  font-size:clamp(5rem,13vw,17rem);
+  color:var(--lunar); letter-spacing:-.025em;
+}
+.rule {
+  width:0; height:1px; margin:2rem 0 1.8rem;
+  background:linear-gradient(90deg, var(--moonlight) 0%, rgba(94,158,212,0) 100%);
+}
+.tagline {
+  font-family:var(--fn-u); font-size:clamp(.78rem,1.3vw,.98rem);
+  font-weight:300; color:rgba(195,210,240,.44);
+  letter-spacing:.05em; line-height:1.55; margin-bottom:2.6rem;
+}
+.cta-wrap { display:flex; gap:1.4rem; align-items:center; }
+button.cta-main {
+  font-family:var(--fn-u); font-size:.7rem; font-weight:400;
+  letter-spacing:.18em; text-transform:uppercase;
+  color:var(--lunar);
+  border:1px solid rgba(200,212,232,.34);
+  background:transparent; padding:.88em 2.4em; cursor:none;
+  transition:background .25s, border-color .25s;
+}
+button.cta-main:hover { background:rgba(200,212,232,.07); border-color:rgba(200,212,232,.65); }
+button.cta-main:focus-visible { outline:2px solid var(--moonlight); outline-offset:3px; }
+button.cta-ghost {
+  font-family:var(--fn-u); font-size:.64rem; font-weight:300;
+  letter-spacing:.16em; text-transform:uppercase;
+  color:rgba(195,210,240,.40); background:none; border:none;
+  padding:.5em 0; cursor:none; transition:color .2s;
+}
+button.cta-ghost:hover { color:rgba(195,210,240,.72); }
+button.cta-ghost:focus-visible { outline:2px solid var(--moonlight); outline-offset:3px; }
+.cur-dot {
+  position:fixed; width:5px; height:5px; border-radius:50%;
+  background:var(--lunar); pointer-events:none; z-index:9999;
+  transform:translate(-50%,-50%); mix-blend-mode:screen;
+}
+.cur-ring {
+  position:fixed; width:28px; height:28px; border-radius:50%;
+  border:1px solid rgba(200,212,232,.46);
+  pointer-events:none; z-index:9998;
+  transform:translate(-50%,-50%);
+}
+@media (max-width:760px) {
+  nav.topbar { padding:1.6rem 1.8rem; }
+  .content { left:1.8rem; bottom:6vh; max-width:88vw; }
+  .globe-wrap { left:48%; top:41%; }
+  #globe-canvas { width:150px !important; height:150px !important; }
+  .cur-dot, .cur-ring { display:none; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .grain { animation:none; }
+}
+</style>
+</head>
+<body>
+<div class="cur-dot" aria-hidden="true"></div>
+<div class="cur-ring" aria-hidden="true"></div>
+<main class="stage">
+  <div class="camera">
+    <video class="media" id="hero-vid"
+      src="https://i.urusai.cc/YTUXa.mp4"
+      autoplay muted loop playsinline
+      aria-label="背景影片 — MRT系統畫面">
+    </video>
+    <div class="overlay" aria-hidden="true"></div>
+  </div>
+  <div class="stars" aria-hidden="true"></div>
+  <div class="globe-wrap" aria-hidden="true">
+    <canvas id="globe-canvas" style="width:220px;height:220px;"></canvas>
+  </div>
+  <nav class="topbar" aria-label="頁面導覽">
+    <span class="brand">MRT Management Platform</span>
+    <div class="nav-r">
+      <span class="edition">Live Operations Status</span>
+      <button class="vid-btn" id="vid-btn" type="button"
+        aria-label="暫停影片" aria-pressed="true">Pause</button>
+    </div>
+  </nav>
+  <section class="content" aria-labelledby="hero-title">
+    <div class="phase-tag" aria-hidden="true">Smart Transit · Executive Dashboard</div>
+    <div class="title" id="hero-title" role="heading" aria-level="1" aria-label="MRT Project Dashboard">
+      <div class="tline-wrap"><span class="tl-1">MRT</span></div>
+      <div class="tline-wrap"><span class="tl-2">project</span></div>
+      <div class="tline-wrap"><span class="tl-3">dashboard</span></div>
+    </div>
+    <div class="rule" aria-hidden="true"></div>
+    <p class="tagline">整合進度、品質、風險與履約資訊。<br>提供管理階層即時決策依據。</p>
+    <div class="cta-wrap">
+      <button class="cta-main" type="button">Project Status</button>
+      <button class="cta-ghost" type="button">Executive Report</button>
+    </div>
+  </section>
+  <div class="grain" aria-hidden="true"></div>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"></script>
+<script>
+(function () {
+  'use strict';
+  var video = document.getElementById('hero-vid');
+  var btn   = document.getElementById('vid-btn');
+  var pausedByUser = false;
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var finePtr = window.matchMedia('(pointer: fine)').matches;
+  var anims   = [];
+  if (finePtr) {
+    var dot  = document.querySelector('.cur-dot');
+    var ring = document.querySelector('.cur-ring');
+    document.addEventListener('mousemove', function (e) {
+      gsap.set(dot,  { x: e.clientX, y: e.clientY });
+      gsap.to(ring,  { x: e.clientX, y: e.clientY, duration: .18, ease: 'power2.out' });
+    });
+  }
+  function playVideo() {
+    if (!pausedByUser) video.play().catch(function () {});
+  }
+  video.muted = true;
+  playVideo();
+  video.addEventListener('loadedmetadata', playVideo, { once: true });
+  btn.addEventListener('click', function () {
+    if (video.paused) {
+      pausedByUser = false;
+      video.play().catch(function () {});
+      anims.forEach(function (a) { a.resume(); });
+      btn.textContent = 'Pause';
+      btn.setAttribute('aria-label', '暫停影片');
+      btn.setAttribute('aria-pressed', 'true');
+    } else {
+      pausedByUser = true;
+      video.pause();
+      anims.forEach(function (a) { a.pause(); });
+      btn.textContent = 'Play';
+      btn.setAttribute('aria-label', '播放影片');
+      btn.setAttribute('aria-pressed', 'false');
+    }
+  });
+  gsap.set(['.tl-1', '.tl-2', '.tl-3'], { y: '108%' });
+  gsap.set(['.brand', '.edition', '.vid-btn',
+            '.phase-tag', '.tagline', '.cta-wrap'], { opacity: 0 });
+  gsap.set(['.phase-tag', '.tagline'], { y: 10 });
+  gsap.set('.globe-wrap', { opacity: 0 });
+  initGlobe();
+  function reveal() {
+    var tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+    tl
+      .to('.globe-wrap', { opacity: 1, duration: 1.6, ease: 'power2.out' }, 0.06)
+      .to('.brand',      { opacity: 1, duration: .55 }, 0.22)
+      .to('.edition',    { opacity: 1, duration: .5 }, 0.30)
+      .to('.vid-btn',    { opacity: 1, duration: .5 }, 0.37)
+      .to('.phase-tag',  { opacity: 1, y: 0, duration: .55 }, 0.42)
+      .to('.tl-1',       { y: '0%', duration: 1.15, ease: 'expo.out' }, 0.50)
+      .to('.tl-2',       { y: '0%', duration: 1.08, ease: 'expo.out' }, 0.64)
+      .to('.tl-3',       { y: '0%', duration: 1.15, ease: 'expo.out' }, 0.78)
+      .to('.rule',       { width: 155, duration: .88, ease: 'power2.inOut' }, 0.92)
+      .to('.tagline',    { opacity: 1, y: 0, duration: .65 }, 1.08)
+      .to('.cta-wrap',   { opacity: 1, duration: .55 }, 1.26);
+    anims.push(tl);
+    if (!reduced) {
+      var cam = gsap.timeline({ repeat: -1, yoyo: true, delay: 2.5 });
+      cam
+        .fromTo('.camera',
+          { xPercent: -0.8, yPercent:  0.35 },
+          { xPercent:  0.8, yPercent: -0.45, duration: 9 })
+        .to('.camera', { xPercent: -0.4, yPercent: 0.22, duration: 8 });
+      anims.push(cam);
+    }
+  }
+  if (document.readyState === 'complete') {
+    reveal();
+  } else {
+    window.addEventListener('load', reveal, { once: true });
+    setTimeout(reveal, 1800);
+  }
+  function initGlobe() {
+    var canvas = document.getElementById('globe-canvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var SIZE = 220;
+    var dpr  = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width  = SIZE * dpr;
+    canvas.height = SIZE * dpr;
+    canvas.style.width  = SIZE + 'px';
+    canvas.style.height = SIZE + 'px';
+    ctx.scale(dpr, dpr);
+    var R  = SIZE / 2 - 1;
+    var cx = SIZE / 2;
+    var cy = SIZE / 2;
+    var rotation = 0;
+    var DOTS = [];
+    for (var lat = -80; lat <= 80; lat += 7) {
+      var cosLat = Math.cos(lat * Math.PI / 180);
+      var step   = cosLat < 0.08 ? 360 : Math.max(6, 7 / cosLat);
+      for (var lng = -180; lng < 180; lng += step) {
+        DOTS.push([lng, lat]);
+      }
+    }
+    function proj(lng, lat) {
+      var lam = (lng + rotation) * Math.PI / 180;
+      var phi = lat * Math.PI / 180;
+      var cosP = Math.cos(phi);
+      var sinP = Math.sin(phi);
+      var cosL = Math.cos(lam);
+      var sinL = Math.sin(lam);
+      if (cosP * cosL <= 0) return null;
+      return [cx + R * cosP * sinL, cy - R * sinP];
+    }
+    function render() {
+      ctx.clearRect(0, 0, SIZE, SIZE);
+      ctx.beginPath();
+      ctx.arc(cx, cy, R, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(238,249,255,0.94)';
+      ctx.fill();
+      ctx.lineWidth = 1.4;
+      ctx.strokeStyle = 'rgba(160,215,255,0.90)';
+      ctx.stroke();
+      for (var lat = -60; lat <= 60; lat += 30) {
+        ctx.beginPath();
+        var started = false;
+        for (var lng = -180; lng <= 181; lng += 3) {
+          var p = proj(lng, lat);
+          if (p) {
+            if (!started) { ctx.moveTo(p[0], p[1]); started = true; }
+            else ctx.lineTo(p[0], p[1]);
+          } else { started = false; }
+        }
+        ctx.strokeStyle = 'rgba(80,140,200,0.32)';
+        ctx.lineWidth = 0.70;
+        ctx.stroke();
+      }
+      for (var lng2 = -180; lng2 < 180; lng2 += 30) {
+        ctx.beginPath();
+        var started2 = false;
+        for (var lat2 = -85; lat2 <= 85; lat2 += 3) {
+          var p2 = proj(lng2, lat2);
+          if (p2) {
+            if (!started2) { ctx.moveTo(p2[0], p2[1]); started2 = true; }
+            else ctx.lineTo(p2[0], p2[1]);
+          } else { started2 = false; }
+        }
+        ctx.strokeStyle = 'rgba(80,140,200,0.32)';
+        ctx.lineWidth = 0.70;
+        ctx.stroke();
+      }
+      ctx.fillStyle = 'rgba(15,60,155,0.75)';
+      for (var i = 0; i < DOTS.length; i++) {
+        var pd = proj(DOTS[i][0], DOTS[i][1]);
+        if (pd) {
+          ctx.beginPath();
+          ctx.arc(pd[0], pd[1], 1.3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      rotation += 0.35;
+    }
+    render();
+    setInterval(render, 50);
+  }
+}());
+</script>
+</body>
+</html>
